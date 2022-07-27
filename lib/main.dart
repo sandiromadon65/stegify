@@ -33,12 +33,13 @@ class _MyHomePageState extends State<MyHomePage> {
   TextEditingController mymessage = TextEditingController();
   TextEditingController mypassword = TextEditingController();
   Uint8List image;
-  String text = "";
+  String text = "Example";
   final picker = ImagePicker();
   bool isLoading = false;
 
   Future getImage() async {
-    final pickedFile = await picker.getImage(source: ImageSource.camera);
+    final pickedFile =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 100);
     if (pickedFile != null) {
       setState(() {
         isLoading = true;
@@ -57,118 +58,36 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  bool isLoading2 = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(text),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: <Widget>[
-          SizedBox(
-            height: 20,
-          ),
-          RaisedButton(
-            child: Text('Select Image'),
-            onPressed: () {
-              getImage();
-            },
-          ),
-          SizedBox(
-            height: 20,
-          ),
-          isLoading
-              ? CircularProgressIndicator()
-              : text.isNotEmpty
-                  ? Text(text)
-                  : image != null
-                      ? Image.memory(image)
-                      : Container(),
-          SizedBox(
-            height: 20,
-          ),
-          image != null
-              ? Column(
-                  children: [
-                    //decode message from image
-                    Text(
-                      'Decoded Text',
-                      style: TextStyle(fontSize: 20),
-                    ),
-                    const SizedBox(height: 20),
-                    TextField(
-                      controller: mypassword,
-                      decoration: InputDecoration(
-                        hintText: 'Password',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    ElevatedButton(
-                        onPressed: () async {
-                          setState(() {
-                            isLoading = true;
-                          });
-                          DecodeRequest request =
-                              DecodeRequest(image, key: mypassword.text);
-                          text = await decodeMessageFromImageAsync(request);
-                          print(text);
-                          setState(() {
-                            isLoading = false;
-                          });
-                        },
-                        child: Text('Decoded Message')),
-                  ],
-                )
-              : Column(
-                  children: [
-                    Text(
-                      'Message:',
-                      style: TextStyle(fontSize: 20),
-                    ),
-                    TextField(
-                      controller: mymessage,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Message',
-                      ),
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    Text(
-                      'Password:',
-                      style: TextStyle(fontSize: 20),
-                    ),
-                    TextField(
-                      controller: mypassword,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Password',
-                      ),
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                  ],
-                )
-        ],
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            //2 elevated buttons encoder and decoder
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => EncodingResultScreen()));
+                },
+                child: Text("Encoder")),
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => DecodingResultScreen()));
+                },
+                child: Text("Decoder")),
+          ],
+        ),
       ),
-      floatingActionButton: text.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: () {
-                isLoading = false;
-                image = null;
-                text = "";
-                mymessage.clear();
-                mypassword.clear();
-                isLoading2 = false;
-                setState(() {});
-              },
-              child: Icon(Icons.remove_circle),
-            )
-          : null,
     );
   }
 

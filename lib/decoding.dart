@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
@@ -7,6 +8,7 @@ import 'package:flutter_steganography/decoder.dart';
 import 'package:flutter_steganography/requests/decode_request.dart';
 import 'package:flutter_steganography/requests/encode_request.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Decode Result Screen
 ///
@@ -26,7 +28,8 @@ class _DecodingResultScreen extends State<DecodingResultScreen> {
   Uint8List images;
   String text = 'Empty';
   Future getImage() async {
-    final pickedFile = await picker.getImage(source: ImageSource.gallery);
+    final pickedFile =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 60);
     if (pickedFile != null) {
       setState(() {
         isLoading = true;
@@ -75,12 +78,15 @@ class _DecodingResultScreen extends State<DecodingResultScreen> {
                       ),
                       ElevatedButton(
                           onPressed: () async {
-                            setState(() {
-                              isLoading = true;
-                            });
+                            SharedPreferences prefs =
+                                await SharedPreferences.getInstance();
+                            var data = prefs.getString('encodeImage');
+                            var decode = jsonDecode(data);
+                            Uint8List image = decode;
                             DecodeRequest request =
-                                DecodeRequest(images, key: mypassword.text);
+                                DecodeRequest(image, key: mypassword.text);
                             text = await decodeMessageFromImageAsync(request);
+                            print(text);
                             setState(() {
                               isLoading = false;
                             });

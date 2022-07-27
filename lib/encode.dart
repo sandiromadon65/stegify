@@ -1,14 +1,18 @@
+import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
-
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
-import 'package:stegify_mobile/loading_states.dart';
 import 'package:flutter_steganography/decoder.dart';
 import 'package:flutter_steganography/encoder.dart';
 import 'package:flutter_steganography/requests/requests.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Encode Result Screen
 ///
@@ -23,6 +27,7 @@ class EncodingResultScreen extends StatefulWidget {
 
 class _EncodingResultScreen extends State<EncodingResultScreen> {
   bool saveLoading = false;
+  Uint8List encodeImage = Uint8List(0);
   Future<void> saveImage(Uint8List imageData) async {
     if (Platform.isAndroid) {
       PermissionStatus status = await Permission.storage.status;
@@ -36,17 +41,31 @@ class _EncodingResultScreen extends State<EncodingResultScreen> {
     setState(() {
       saveLoading = true;
     });
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     EncodeRequest request =
         EncodeRequest(imageData, mymessage.text, key: mypassword.text);
-    imageData = await encodeMessageIntoImageAsync(request);
-    dynamic response =
-        await ImageGallerySaver.saveImage(imageData, quality: 100);
-    if (response.toString().toLowerCase().contains('not found')) {
-      throw FlutterError('save_image_to_gallert_failed');
-    }
+    Uint8List res = await encodeMessageIntoImageAsync(request);
+    encodeImage = res;
+    print(encodeImage);
+    prefs.setString('encodeImage', jsonEncode(encodeImage));
+    String fileName = path.path.split('/').last;
+    final hasil =
+        await ImageGallerySaver.saveImage(res, isReturnImagePathOfIOS: true);
+    print(hasil);
     setState(() {
       saveLoading = false;
     });
+  }
+
+//globalKey
+  GlobalKey<ScaffoldState> globalKey = GlobalKey<ScaffoldState>();
+  Future<void> _save() async {
+    RenderRepaintBoundary boundary =
+        globalKey.currentContext.findRenderObject();
+    ui.Image image = await boundary.toImage(pixelRatio: 2.0);
+    ByteData byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    Uint8List pngBytes = byteData.buffer.asUint8List();
+    Navigator.pop(context, pngBytes);
   }
 
   Uint8List image;
@@ -56,10 +75,11 @@ class _EncodingResultScreen extends State<EncodingResultScreen> {
   TextEditingController mymessage = TextEditingController();
   TextEditingController mypassword = TextEditingController();
   Future getImage() async {
-    final pickedFile = await picker.getImage(source: ImageSource.camera);
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       File _image = File(pickedFile.path);
       path = _image;
+      print(path.path);
       image = _image.readAsBytesSync();
       setState(() {
         isLoading = true;
@@ -69,6 +89,7 @@ class _EncodingResultScreen extends State<EncodingResultScreen> {
     }
   }
 
+  String text = "";
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
@@ -101,33 +122,50 @@ class _EncodingResultScreen extends State<EncodingResultScreen> {
                       : Image.file(path),
                 ),
                 Container(
-                  child: isLoading == false
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TextField(
-                              controller: mymessage,
-                              decoration: InputDecoration(
-                                labelText: 'Message',
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 10,
-                            ),
-                            TextField(
-                              controller: mypassword,
-                              decoration: InputDecoration(
-                                labelText: 'Password',
-                              ),
-                            ),
-                          ],
-                        )
-                      : ElevatedButton(
-                          onPressed: () {
-                            saveImage(image);
-                          },
-                          child: Text('Save Image')),
-                )
+                    child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: mymessage,
+                      decoration: InputDecoration(
+                        labelText: 'Message',
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    TextField(
+                      controller: mypassword,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                      ),
+                    ),
+                  ],
+                )),
+                ElevatedButton(
+                    onPressed: () {
+                      saveImage(image);
+                    },
+                    child: Text('Save Image')),
+                const SizedBox(
+                  height: 10,
+                ),
+                ElevatedButton(
+                    onPressed: () async {
+                      // File files = File(
+                      //     "///storage/emulated/0/Pictures/1658909172315.jpg");
+                      // Uint8List bytes = files.readAsBytesSync();
+                      DecodeRequest request =
+                          DecodeRequest(encodeImage, key: mypassword.text);
+                      text = await decodeMessageFromImageAsync(request);
+                      print(text);
+                      setState(() {});
+                    },
+                    child: Text('Decode Image')),
+                const SizedBox(
+                  height: 10,
+                ),
+                Text(text.isEmpty ? 'No message found' : text),
               ],
             ),
       floatingActionButton: FloatingActionButton(
