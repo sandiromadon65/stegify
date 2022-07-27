@@ -1,0 +1,63 @@
+{
+  "project_info": {
+    "project_number": "116510882934",
+    "firebase_url": "https://tubes-f63f8-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "tubes-f63f8",
+    "storage_bucket": "tubes-f63f8.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:116510882934:android:d66a3061f1113adf28f357",
+        "android_client_info": {
+          "package_name": "com.example.tubes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "116510882934-chgleqaonta8u8jt2akbs2nqi3jg6ll4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.tubes",
+            "certificate_hash": "37d495a6b4cd9255227fdcc1a60f23fec670d45c"
+          }
+        },
+        {
+          "client_id": "116510882934-td5kf93st4ko8bqf5ktr2u2vub914clr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.tubes",
+            "certificate_hash": "dea6d80457ca6d56073e2355c5e01f162656d43d"
+          }
+        },
+        {
+          "client_id": "116510882934-3lkeo8imd1r32tr3nkehu53fgsr6e0am.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAu2sB_J64tkHpodpMuRO5-6qbWLEA82bc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "116510882934-3lkeo8imd1r32tr3nkehu53fgsr6e0am.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "116510882934-qs5s0n7fe9sa8ei0efadlidcaf6t01l2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.tubes"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

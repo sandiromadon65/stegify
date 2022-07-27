@@ -11,8 +11,14 @@ import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:stegify_mobile/decoding.dart';
 import 'package:stegify_mobile/encode.dart';
 import 'package:stegify_mobile/loading_states.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() => runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  //UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(authCredential);
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   @override

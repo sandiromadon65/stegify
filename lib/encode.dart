@@ -11,8 +11,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:flutter_steganography/decoder.dart';
 import 'package:flutter_steganography/encoder.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_steganography/requests/requests.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 /// Encode Result Screen
 ///
@@ -27,6 +29,8 @@ class EncodingResultScreen extends StatefulWidget {
 
 class _EncodingResultScreen extends State<EncodingResultScreen> {
   bool saveLoading = false;
+  FirebaseStorage storage = FirebaseStorage.instance;
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
   Uint8List encodeImage = Uint8List(0);
   Future<void> saveImage(Uint8List imageData) async {
     if (Platform.isAndroid) {
@@ -41,17 +45,26 @@ class _EncodingResultScreen extends State<EncodingResultScreen> {
     setState(() {
       saveLoading = true;
     });
-    SharedPreferences prefs = await SharedPreferences.getInstance();
     EncodeRequest request =
         EncodeRequest(imageData, mymessage.text, key: mypassword.text);
     Uint8List res = await encodeMessageIntoImageAsync(request);
     encodeImage = res;
-    print(encodeImage);
-    prefs.setString('encodeImage', jsonEncode(encodeImage));
-    String fileName = path.path.split('/').last;
-    final hasil =
-        await ImageGallerySaver.saveImage(res, isReturnImagePathOfIOS: true);
-    print(hasil);
+    var snapshot = await storage
+        .ref()
+        .child('images/${DateTime.now().millisecondsSinceEpoch}.png')
+        .putData(encodeImage)
+        .whenComplete(() => print('Uploaded'));
+    var downloadUrl = await snapshot.ref.getDownloadURL();
+    CollectionReference images = firestore.collection('image');
+    await images.add({
+      'url': downloadUrl,
+    }).then((value) => print('saved'));
+    // print(encodeImage);
+    // prefs.setString('encodeImage', jsonEncode(encodeImage));
+    // String fileName = path.path.split('/').last;
+    // final hasil =
+    //     await ImageGallerySaver.saveImage(res, isReturnImagePathOfIOS: true);
+    // print(hasil);
     setState(() {
       saveLoading = false;
     });
