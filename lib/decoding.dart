@@ -1,14 +1,13 @@
-import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_steganography/decoder.dart';
 import 'package:flutter_steganography/requests/decode_request.dart';
 import 'package:flutter_steganography/requests/encode_request.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Decode Result Screen
 ///
@@ -25,16 +24,17 @@ class _DecodingResultScreen extends State<DecodingResultScreen> {
   final picker = ImagePicker();
   TextEditingController mypassword = TextEditingController();
   bool isLoading = false;
+  String path = '/data/user/0/com.example.tubes/cache1659074639457.png';
   Uint8List images;
   String text = 'Empty';
   Future getImage() async {
-    final pickedFile =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 60);
+    final pickedFile = await FilePicker.platform.pickFiles();
     if (pickedFile != null) {
       setState(() {
         isLoading = true;
       });
-      File _image = File(pickedFile.path);
+      File _image = File(pickedFile.files.single.path);
+      path = _image.path;
       images = _image.readAsBytesSync();
       setState(() {
         isLoading = false;
@@ -44,68 +44,131 @@ class _DecodingResultScreen extends State<DecodingResultScreen> {
     }
   }
 
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  //get data from firebase firestore as stream
+  Stream<QuerySnapshot> get dataStream {
+    return firestore.collection('image').snapshots();
+  }
+
   @override
   Widget build(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+    double height = MediaQuery.of(context).size.height;
     return Scaffold(
       appBar: AppBar(
-        title: Text("Decoding Image"),
-        leading: IconButton(
-            key: Key('decoded_screen_back_btn'),
-            icon: Icon(Icons.arrow_back_ios),
-            onPressed: () {
-              Navigator.pop(context);
-            }),
+        title: Text('Decode'),
       ),
-      resizeToAvoidBottomInset: false,
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Container(
-            child: isLoading == false
-                ? Column(
-                    children: [
-                      Text(
-                        'Decoded Text',
-                        style: TextStyle(fontSize: 20),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: mypassword,
-                        decoration: InputDecoration(
-                          hintText: 'Password',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      ElevatedButton(
-                          onPressed: () async {
-                            SharedPreferences prefs =
-                                await SharedPreferences.getInstance();
-                            var data = prefs.getString('encodeImage');
-                            var decode = jsonDecode(data);
-                            Uint8List image = decode;
-                            DecodeRequest request =
-                                DecodeRequest(image, key: mypassword.text);
-                            text = await decodeMessageFromImageAsync(request);
-                            print(text);
-                            setState(() {
-                              isLoading = false;
-                            });
-                          },
-                          child: Text('Decoded Message')),
-                    ],
-                  )
-                : Center(
-                    child: CircularProgressIndicator(),
+          path.isEmpty
+              ? Container()
+              : Container(
+                  height: height * 0.4,
+                  width: width * 0.8,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: FileImage(File(path)),
+                      fit: BoxFit.cover,
+                    ),
                   ),
+                ),
+          Text(
+            'Password:',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          Text(text),
+          TextField(
+            controller: mypassword,
+            obscureText: true,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Password',
+            ),
+          ),
+          const SizedBox(
+            height: 10,
+          ),
+          ElevatedButton(
+              onPressed: () {
+                decodeImage();
+              },
+              child: Text('Decode')),
+          const SizedBox(
+            height: 10,
+          ),
+          Text(
+            'Decoded Text: $text',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: getImage,
-        tooltip: 'Pick Image',
-        child: Icon(Icons.add_a_photo),
+        onPressed: () {
+          getImage();
+        },
+        child: Icon(Icons.photo_library),
       ),
     );
   }
+
+  decodeImage() async {
+    File files = File(path);
+    DecodeRequest request =
+        DecodeRequest(files.readAsBytesSync(), key: mypassword.text);
+    text = await decodeMessageFromImageAsync(request);
+    print(text);
+    setState(() {
+      isLoading = false;
+    });
+  }
 }
+//  return StreamBuilder<QuerySnapshot>(
+//         stream: dataStream,
+//         builder: ((context, snapshot) {
+//           if (snapshot.hasData) {
+//             return Scaffold(
+//               appBar: AppBar(
+//                 title: Text('Decode Result'),
+//               ),
+//               body: ListView.builder(
+//                   itemCount: snapshot.data.docs.length,
+//                   itemBuilder: (context, index) {
+//                     var data = snapshot.data.docs[index].data();
+//                     return InkWell(
+//                       onTap: () {
+//                         Navigator.push(
+//                             context,
+//                             MaterialPageRoute(
+//                                 builder: (context) => DecodeScreen(
+//                                       imageUrl: data['url'],
+//                                     )));
+//                       },
+//                       child: Container(
+//                           margin: EdgeInsets.all(10),
+//                           height: height * 0.2,
+//                           width: width * 0.8,
+//                           decoration: BoxDecoration(
+//                               image: DecorationImage(
+//                             image: NetworkImage(data['url']),
+//                           ))),
+//                     );
+//                   }),
+//             );
+//           } else {
+//             return Scaffold(
+//               appBar: AppBar(
+//                 title: Text('Decode Result'),
+//               ),
+//               body: Center(
+//                 child: CircularProgressIndicator(),
+//               ),
+//             );
+//           }
+//         }));

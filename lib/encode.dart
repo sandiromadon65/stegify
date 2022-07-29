@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -8,8 +6,6 @@ import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
-import 'package:flutter_steganography/decoder.dart';
 import 'package:flutter_steganography/encoder.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_steganography/requests/requests.dart';
@@ -34,7 +30,7 @@ class _EncodingResultScreen extends State<EncodingResultScreen> {
   Uint8List encodeImage = Uint8List(0);
   Future<void> saveImage(Uint8List imageData) async {
     if (Platform.isAndroid) {
-      PermissionStatus status = await Permission.storage.status;
+      PermissionStatus status = await Permission.storage.request();
       if (!status.isGranted) {
         if (!await Permission.storage.request().isGranted) {
           print('no storage permission to save image');
@@ -49,16 +45,20 @@ class _EncodingResultScreen extends State<EncodingResultScreen> {
         EncodeRequest(imageData, mymessage.text, key: mypassword.text);
     Uint8List res = await encodeMessageIntoImageAsync(request);
     encodeImage = res;
-    var snapshot = await storage
-        .ref()
-        .child('images/${DateTime.now().millisecondsSinceEpoch}.png')
-        .putData(encodeImage)
-        .whenComplete(() => print('Uploaded'));
-    var downloadUrl = await snapshot.ref.getDownloadURL();
-    CollectionReference images = firestore.collection('image');
-    await images.add({
-      'url': downloadUrl,
-    }).then((value) => print('saved'));
+    String filename = '${DateTime.now().millisecondsSinceEpoch}.png';
+    print('saving image as $filename');
+    Directory tempDir = await getTemporaryDirectory();
+    _saveImage(encodeImage, tempDir, filename, success: () {}, fail: () {});
+    // var snapshot = await storage
+    //     .ref()
+    //     .child('images/data/${DateTime.now().millisecondsSinceEpoch}.png')
+    //     .putData(encodeImage)
+    //     .whenComplete(() => print('Uploaded'));
+    // var downloadUrl = await snapshot.ref.getDownloadURL();
+    // CollectionReference images = firestore.collection('image');
+    // await images.add({
+    //   'url': downloadUrl,
+    // }).then((value) => print('saved'));
     // print(encodeImage);
     // prefs.setString('encodeImage', jsonEncode(encodeImage));
     // String fileName = path.path.split('/').last;
@@ -72,13 +72,21 @@ class _EncodingResultScreen extends State<EncodingResultScreen> {
 
 //globalKey
   GlobalKey<ScaffoldState> globalKey = GlobalKey<ScaffoldState>();
-  Future<void> _save() async {
-    RenderRepaintBoundary boundary =
-        globalKey.currentContext.findRenderObject();
-    ui.Image image = await boundary.toImage(pixelRatio: 2.0);
-    ByteData byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    Uint8List pngBytes = byteData.buffer.asUint8List();
-    Navigator.pop(context, pngBytes);
+  void _saveImage(Uint8List uint8List, Directory dir, String fileName,
+      {Function success, Function fail}) async {
+    bool isDirExist = await Directory(dir.path).exists();
+    if (!isDirExist) Directory(dir.path).create();
+    String tempPath = '${dir.path}$fileName';
+    print(tempPath);
+    File image = File(tempPath);
+    bool isExist = await image.exists();
+    if (isExist) await image.delete();
+    File(tempPath).writeAsBytes(uint8List).then((_) {
+      success();
+      print('image saved');
+    }).catchError((error) {
+      if (fail != null) fail();
+    });
   }
 
   Uint8List image;
@@ -163,22 +171,22 @@ class _EncodingResultScreen extends State<EncodingResultScreen> {
                 const SizedBox(
                   height: 10,
                 ),
-                ElevatedButton(
-                    onPressed: () async {
-                      // File files = File(
-                      //     "///storage/emulated/0/Pictures/1658909172315.jpg");
-                      // Uint8List bytes = files.readAsBytesSync();
-                      DecodeRequest request =
-                          DecodeRequest(encodeImage, key: mypassword.text);
-                      text = await decodeMessageFromImageAsync(request);
-                      print(text);
-                      setState(() {});
-                    },
-                    child: Text('Decode Image')),
-                const SizedBox(
-                  height: 10,
-                ),
-                Text(text.isEmpty ? 'No message found' : text),
+                // ElevatedButton(
+                //     onPressed: () async {
+                //       // File files = File(
+                //       //     "///storage/emulated/0/Pictures/1658909172315.jpg");
+                //       // Uint8List bytes = files.readAsBytesSync();
+                //       DecodeRequest request =
+                //           DecodeRequest(encodeImage, key: mypassword.text);
+                //       text = await decodeMessageFromImageAsync(request);
+                //       print(text);
+                //       setState(() {});
+                //     },
+                //     child: Text('Decode Image')),
+                // const SizedBox(
+                //   height: 10,
+                // ),
+                // Text(text.isEmpty ? 'No message found' : text),
               ],
             ),
       floatingActionButton: FloatingActionButton(
