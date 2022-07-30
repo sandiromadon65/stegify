@@ -24,7 +24,7 @@ class _DecodingResultScreen extends State<DecodingResultScreen> {
   final picker = ImagePicker();
   TextEditingController mypassword = TextEditingController();
   bool isLoading = false;
-  String path = '/data/user/0/com.example.tubes/cache1659074639457.png';
+  String path = '';
   Uint8List images;
   String text = 'Empty';
   Future getImage() async {

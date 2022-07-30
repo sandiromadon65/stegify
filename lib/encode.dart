@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -46,7 +47,6 @@ class _EncodingResultScreen extends State<EncodingResultScreen> {
     Uint8List res = await encodeMessageIntoImageAsync(request);
     encodeImage = res;
     String filename = '${DateTime.now().millisecondsSinceEpoch}.png';
-    print('saving image as $filename');
     Directory tempDir = await getTemporaryDirectory();
     _saveImage(encodeImage, tempDir, filename, success: () {}, fail: () {});
     // var snapshot = await storage
@@ -77,13 +77,15 @@ class _EncodingResultScreen extends State<EncodingResultScreen> {
     bool isDirExist = await Directory(dir.path).exists();
     if (!isDirExist) Directory(dir.path).create();
     String tempPath = '${dir.path}$fileName';
-    print(tempPath);
     File image = File(tempPath);
     bool isExist = await image.exists();
     if (isExist) await image.delete();
-    File(tempPath).writeAsBytes(uint8List).then((_) {
+    File(tempPath).writeAsBytes(uint8List).then((value) async {
       success();
-      print('image saved');
+      String namefile = path.path.split('/').last;
+      final response =
+          await ImageGallerySaver.saveFile(value.path, name: namefile);
+      print(response);
     }).catchError((error) {
       if (fail != null) fail();
     });

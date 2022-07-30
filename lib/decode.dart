@@ -1,16 +1,9 @@
-import 'dart:convert';
-import 'dart:developer';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_steganography/decoder.dart';
 import 'package:flutter_steganography/requests/decode_request.dart';
-import 'package:flutter_steganography/requests/encode_request.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:stegify_mobile/decode.dart';
 
 class DecodeScreen extends StatefulWidget {
   final String imageUrl;
